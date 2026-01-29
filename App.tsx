@@ -29,29 +29,42 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const generateImage = async () => {
+      // Verifica se a API KEY existe para não quebrar o site caso o usuário esqueça
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        console.warn("API_KEY não configurada nas variáveis de ambiente.");
+        setIsLoadingImage(false);
+        return;
+      }
+
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey });
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash-image',
           contents: {
             parts: [
               {
-                text: 'A high-end 3D mockup of a digital ebook titled "Detox Bucal". Elegant, modern cover with teal and white accents. Minimalist design representing oral fresh health. Studio quality, 3D perspective.',
+                text: 'A professional high-quality 3D mockup of a digital ebook guide titled "Detox Bucal". Elegant, modern cover design with teal, emerald and white colors. Minimalist aesthetic for oral health and freshness. High resolution, studio lighting, isolated on white background.',
               },
             ],
           },
           config: {
             imageConfig: {
-              aspectRatio: "3:4"
+              aspectRatio: "1:1"
             }
           }
         });
 
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            const base64EncodeString = part.inlineData.data;
-            setProductImage(`data:image/png;base64,${base64EncodeString}`);
-            break;
+        // Correção para o erro de TypeScript: verificando se candidates existe antes de acessar
+        if (response && response.candidates && response.candidates.length > 0) {
+          const candidate = response.candidates[0];
+          if (candidate.content && candidate.content.parts) {
+            for (const part of candidate.content.parts) {
+              if (part.inlineData) {
+                setProductImage(`data:image/png;base64,${part.inlineData.data}`);
+                break;
+              }
+            }
           }
         }
       } catch (error) {
@@ -70,7 +83,7 @@ const App: React.FC = () => {
       <section className="relative pt-12 pb-20 md:pt-24 md:pb-32 overflow-hidden gradient-bg">
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center space-x-2 bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full text-sm font-bold mb-8 animate-fade-in">
+            <div className="inline-flex items-center space-x-2 bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full text-sm font-bold mb-8 animate-bounce">
               <Sparkles className="w-4 h-4" />
               <span>Conteúdo Prático e Educativo</span>
             </div>
@@ -162,17 +175,18 @@ const App: React.FC = () => {
             <div className="w-full md:w-1/2">
               <div className="relative group">
                 <div className="absolute inset-0 bg-teal-200 rounded-3xl blur-2xl opacity-30 transform rotate-3 group-hover:rotate-6 transition-transform"></div>
-                <div className="relative bg-white p-4 rounded-3xl shadow-2xl border border-slate-100 overflow-hidden aspect-[4/5] flex items-center justify-center">
+                <div className="relative bg-white p-4 rounded-3xl shadow-2xl border border-slate-100 overflow-hidden aspect-square flex items-center justify-center">
                    {isLoadingImage ? (
                      <div className="flex flex-col items-center space-y-4 text-slate-400">
-                       <Loader2 className="w-12 h-12 animate-spin" />
-                       <p className="text-sm font-bold">Gerando mockup exclusivo...</p>
+                       <Loader2 className="w-12 h-12 animate-spin text-teal-600" />
+                       <p className="text-sm font-bold">Criando capa do guia...</p>
                      </div>
                    ) : productImage ? (
                      <img src={productImage} alt="Guia Detox Bucal Mockup" className="w-full h-full object-cover rounded-2xl" />
                    ) : (
-                     <div className="w-full h-full bg-teal-50 flex items-center justify-center">
+                     <div className="w-full h-full bg-teal-50 flex flex-col items-center justify-center space-y-4">
                         <BookOpen className="w-20 h-20 text-teal-200" />
+                        <p className="text-teal-600 font-bold">Guia Digital Detox Bucal</p>
                      </div>
                    )}
                    
@@ -182,7 +196,7 @@ const App: React.FC = () => {
                       </div>
                       <div className="leading-tight">
                         <p className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">PDF Educativo</p>
-                        <p className="text-sm font-bold text-slate-800 tracking-tight">Leitura em 3 min</p>
+                        <p className="text-sm font-bold text-slate-800 tracking-tight">Acesso Instantâneo</p>
                       </div>
                    </div>
                 </div>
